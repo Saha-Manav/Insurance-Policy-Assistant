@@ -1,0 +1,311 @@
+{
+  "name": "AI Insaurance Policy Query Assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=AIzaSyCououJMO2or1MHg3YdhbvYYcLi51heFks",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "=  {\n  \"contents\": [\n    {\n      \"parts\": [\n        {\n          \"text\": \"Summarize the intent and extract semantic tags for: {{$json.original_query}}\"\n        }\n      ]\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -380,
+        0
+      ],
+      "id": "efe49497-2a62-4feb-8b85-28c3b17fa501",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=AIzaSyCououJMO2or1MHg3YdhbvYYcLi51heFks",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "=contents[0].parts[0].text",
+              "value": "== Given the user query: ${{ $('Parsing Code').item.json.original_query }}, and the document clause: ${{ $('Download Text').item.json.data }}\\n\\nAnswer whether this clause is relevant to the user's query, and if so, summarize the relevant information in a clear and helpful way. Keep your answer short and specific."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -220,
+        220
+      ],
+      "id": "64689e19-9659-434b-9ff2-d241a8f9afa3",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  const raw = item.json.candidates?.[0]?.content?.parts?.[0]?.text || \"\";\n  return {\n    json: {\n      ...item.json,\n      model_response: raw.trim()\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        220
+      ],
+      "id": "ef898c69-580f-47dd-b409-d207c47ab93e",
+      "name": "Filter Code"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the document name from the PDFco API node\nconst docName = $('PDFco Api').first().json.name || \"UnnamedDocument\";\n\n// Get the plain text from the HTTP request node\nconst text = $input.first().json.data || \"\"; // text content\n\nconst words = text.trim().split(/\\s+/);\nconst chunkSize = 300;\nconst totalChunks = Math.ceil(words.length / chunkSize);\n\nlet chunks = [];\n\nfor (let i = 0; i < words.length; i += chunkSize) {\n  chunks.push({\n    chunk: words.slice(i, i + chunkSize).join(\" \"),\n    chunk_number: Math.floor(i / chunkSize),\n    doc_name: docName,\n    total_chunks: totalChunks\n  });\n}\n\n// Return each chunk as a separate output item\nreturn chunks.map(chunk => ({ json: chunk }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -780,
+        220
+      ],
+      "id": "61421ff1-9f42-4d12-82fb-223c23996ce1",
+      "name": "Chunking Code",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "Convert from PDF",
+        "url": "https://drive.google.com/uc?export=download&id=1WltkGzvH05OIuR4mXUMM648eC2Md5ZOY",
+        "advancedOptions": {}
+      },
+      "type": "n8n-nodes-pdfco.PDFco Api",
+      "typeVersion": 1,
+      "position": [
+        100,
+        0
+      ],
+      "id": "85ef316e-bba0-4124-ae16-20db741217b8",
+      "name": "PDFco Api",
+      "credentials": {
+        "pdfcoApi": {
+          "id": "lnI0e2yJVZly7hzU",
+          "name": "PDF.co account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        320,
+        0
+      ],
+      "id": "9f4c491e-2bc8-4ef6-942d-d1138dc904f5",
+      "name": "Download Text"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "1WltkGzvH05OIuR4mXUMM648eC2Md5ZOY",
+          "mode": "list",
+          "cachedResultName": "Document1.pdf",
+          "cachedResultUrl": "https://drive.google.com/file/d/1WltkGzvH05OIuR4mXUMM648eC2Md5ZOY/view?usp=drivesdk"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -120,
+        0
+      ],
+      "id": "7ac4802f-bf52-4e63-aeca-9c6647463926",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "DS7ci0sgr6C5AeSa",
+          "name": "Google Drive account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json.body.query;\nconst text = (typeof input === \"string\" && input.trim() !== \"\") ? input : JSON.stringify(input || \"\");\n\nif (!text || typeof text !== \"string\") {\n  throw new Error(\"Invalid input text\");\n}\n\nconst extract = (text) => {\n  const ageMatch = text.match(/(\\d{2})(?=[MF])/i);  // Match digits before M/F\n  const genderMatch = text.match(/(\\d{2})([MF])\\b/i); // Capture gender with age\n  const procedureMatch = text.match(/(knee|hip|shoulder)?\\s?(surgery|procedure|treatment)/i);\n  const locationMatch = text.match(/\\b(Pune|Delhi|Mumbai|Chennai|Kolkata|Bangalore)\\b/i);\n  const durationMatch = text.match(/(\\d+)[ -]?(month|year)/i);\n\n  return {\n    age: ageMatch?.[1] || null,\n    gender: genderMatch?.[2] || null,\n    procedure: procedureMatch?.[0] || null,\n    location: locationMatch?.[1] || null,\n    policy_duration: durationMatch?.[0] || null,\n    original_query: text\n  };\n};\n\nreturn [{ json: extract(text) }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -640,
+        0
+      ],
+      "id": "bab3e72e-af5e-4a5f-8ea0-1e6da5f1b95a",
+      "name": "Parsing Code"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "e1a08ca3-c465-4c4a-9606-c21439b396f2",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -840,
+        0
+      ],
+      "id": "c453d42b-79fe-4253-9b2b-c1003fced8a7",
+      "name": "Webhook",
+      "webhookId": "e1a08ca3-c465-4c4a-9606-c21439b396f2"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        320,
+        220
+      ],
+      "id": "971b67d2-c5f0-4644-b110-c8bad96a4959",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Filter Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chunking Code": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PDFco Api": {
+      "main": [
+        [
+          {
+            "node": "Download Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Text": {
+      "main": [
+        [
+          {
+            "node": "Chunking Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "PDFco Api",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parsing Code": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Parsing Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Code": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "8e52b1e6-bf3e-4161-82cf-ae9792482216",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7b5add8e4b47e5290beb88b7c30bc25e20e3aae59493170527f5f03306a92ddb"
+  },
+  "id": "nH3QeaYUdkp53swL",
+  "tags": []
+}

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Policy Query Assistant</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>Policy Query Assistant</h1>
+      <textarea
+        id="queryInput"
+        placeholder="e.g. 46M, knee surgery, Pune, 3-month policy"
+      ></textarea>
+      <button onclick="sendQuery()">Submit</button>
+      <div class="response-section">
+        <h2>Response:</h2>
+        <pre id="responseOutput">Waiting for input...</pre>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
