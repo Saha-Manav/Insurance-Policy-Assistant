@@ -27,9 +27,16 @@ cd Insurance-Policy-Assistant
 
 
 
-### 4. Start Frontend 
+### 2. Start Frontend 
 
 You can open `frontend/index.html` directly in your browser.
+
+
+## 🌐 Deployable Site
+
+🔗 **Live Demo**: [Insurance Query Assistant Web App](https://ai-agent-assistant-2426.netlify.app/)
+
+Experience the deployed version of the Insurance Query Assistant. Use the interface to ask natural language questions and see how the system retrieves answers from insurance documents.
 
 ---
 
@@ -46,14 +53,13 @@ To integrate with [n8n](https://n8n.io):
 
 ## 🧪 Example Query
 
-1. Upload or load an insurance policy.
-2. Ask a question:
+1. Ask a question:
 
    ```
    “What is the maximum hospitalization coverage under this policy?”
    ```
 
-3. The assistant will:
+2. The assistant will:
    - Retrieve relevant policy sections
    - Process the context using the LLM
    - Return a concise, human-like answer
