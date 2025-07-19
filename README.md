@@ -34,7 +34,7 @@ You can open `frontend/index.html` directly in your browser.
 
 ## 🌐 Deployable Site
 
-🔗 **Live Demo**: [Insurance Query Assistant Web App](https://ai-agent-assistant-2426.netlify.app/)
+🔗 **Live Demo**: [Insurance Query Assistant Web App](https://insurance-query-assistant.netlify.app/)
 
 Experience the deployed version of the Insurance Query Assistant. Use the interface to ask natural language questions and see how the system retrieves answers from insurance documents.
 
