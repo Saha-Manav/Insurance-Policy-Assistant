@@ -1,0 +1,434 @@
+{
+  "name": "Insurance Query Assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "e1a08ca3-c465-4c4a-9606-c21439b396f2",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -768,
+        -96
+      ],
+      "id": "e11ef1da-967d-4316-a0fe-d0e906eb0c2c",
+      "name": "Webhook",
+      "webhookId": "e1a08ca3-c465-4c4a-9606-c21439b396f2"
+    },
+    {
+      "parameters": {
+        "operation": "Convert from PDF",
+        "url": "={{ $json.body.pdfUrl }}",
+        "advancedOptions": {}
+      },
+      "type": "n8n-nodes-pdfco.PDFco Api",
+      "typeVersion": 1,
+      "position": [
+        -544,
+        -96
+      ],
+      "id": "40281980-f6f1-4f76-8cd3-b50f1e4b1ba8",
+      "name": "PDFco Api",
+      "credentials": {
+        "pdfcoApi": {
+          "id": "TOMrSJawwXLlHW3N",
+          "name": "PDF.co account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const text =$input.first().json.data || \"\";  // Adjust to where your plain text is in the incoming data\n\nif (!text) {\n  throw new Error(\"No text found to chunk\");\n}\n\n// Split by whitespace into words\nconst words = text.split(/\\s+/);\n\nconst chunkSize = 100;  // number of words per chunk (adjust as needed)\nconst chunks = [];\n\nfor (let i = 0; i < words.length; i += chunkSize) {\n  const chunkWords = words.slice(i, i + chunkSize);\n  chunks.push({\n    json: {\n      chunk_text: chunkWords.join(\" \"),\n      chunk_index: i / chunkSize,\n    }\n  });\n}\n\nreturn chunks;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -112,
+        -96
+      ],
+      "id": "a95ea2f2-9e01-4cca-b456-6c072845a882",
+      "name": "Chunk Text"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -336,
+        -96
+      ],
+      "id": "809fab72-a402-4ecc-b424-32abbde4416b",
+      "name": "Download Text"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://policy-index-ioug10s.svc.aped-4627-b74a.pinecone.io/vectors/upsert",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Api-Key",
+              "value": "pcsk_49kxXX_2X6ZhHzPoa16KZF6hjCcsLJtWxczjePFYrUPBDNPgZ3TGw5GvjUwBAMZ59z18df"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "vectors",
+              "value": "={{ $json.vectors }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        -496,
+        192
+      ],
+      "id": "67c56256-7a34-4420-8fcc-358e9f7a3c93",
+      "name": "Upsert to Pinecone"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract questions array from incoming data\nconst questions = $('Webhook').first().json.body.questions || [];\n\n// Map each question into separate JSON items\nreturn questions.map(q => ({ json: { question: q } }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -304,
+        192
+      ],
+      "id": "bb8b4ca7-9080-4d3f-8f83-858e0fbc1c64",
+      "name": "Question Code"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://policy-index-ioug10s.svc.aped-4627-b74a.pinecone.io/query",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Api-Key",
+              "value": "pcsk_49kxXX_2X6ZhHzPoa16KZF6hjCcsLJtWxczjePFYrUPBDNPgZ3TGw5GvjUwBAMZ59z18df"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "vector",
+              "value": "={{ $json[\"embedding\"][\"values\"] }}"
+            },
+            {
+              "name": "topK",
+              "value": "40"
+            },
+            {
+              "name": "includeMetadata",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        560,
+        240
+      ],
+      "id": "ab4d9b8c-6ea6-4291-863b-4119d71a58f9",
+      "name": "Pinecode Query"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -96,
+        192
+      ],
+      "id": "327bc695-faff-4006-a124-6bd8ad215f90",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1/models/embedding-001:embedContent?key=AIzaSyCououJMO2or1MHg3YdhbvYYcLi51heFks",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "models/embedding-001"
+            },
+            {
+              "name": "content.parts[0].text",
+              "value": "={{ $json.chunk_text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        112,
+        -96
+      ],
+      "id": "c7068200-6af5-4a33-b9cd-aad5d6406d98",
+      "name": "Chunk Embedding"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1/models/embedding-001:embedContent?key=AIzaSyCououJMO2or1MHg3YdhbvYYcLi51heFks",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"models/embedding-001\",\n  \"content\": {\n    \"parts\": [\n      {\n        \"text\": \"={{ $json.question }}\"\n      }\n    ]\n  }\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        320,
+        240
+      ],
+      "id": "12d3c830-0644-48c5-b118-0b13971ad397",
+      "name": "Question Embedding"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 'items' is an array where each item corresponds to one Pinecone query response.\n// Each item contains a 'matches' array with individual match objects.\n\n// Collect all matches from all items\nconst allMatches = [];\n\nfor (const item of items) {\n  const matches = item.json.matches || [];\n  for (const match of matches) {\n    // Check if metadata.text exists\n    if (match.metadata && match.metadata.text) {\n      allMatches.push({\n        text: match.metadata.text,\n        score: match.score,\n      });\n    }\n  }\n}\n\n// Sort matches by score descending (best first)\nallMatches.sort((a, b) => b.score - a.score);\n\n// Take top 5 results\nconst topResults = allMatches.slice(0, 5);\n\n// Return each as a separate JSON item for further use\nreturn topResults.map((res, index) => ({\n  json: {\n    answer_index: index + 1,\n    text: res.text,\n    score: res.score,\n  },\n}));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        544,
+        128
+      ],
+      "id": "d79ebff4-e453-46ce-b8f2-2b6455f2524b",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Assume this node receives input items with embedding and chunk_text fields\n\nconst vectors = items.map(item => {\n  return {\n    id: `${item.executionId || $execution.id}_${$('Chunk Text').first().json.chunk_index ?? 0}`,\n    values: item.json.embedding.values,\n    metadata: {\n      text: $('Chunk Text').first().json.chunk_text,\n    },\n  };\n});\n\n// Return a single item with 'vectors' property as array of vectors\nreturn [{\n  json: {\n    vectors\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        -96
+      ],
+      "id": "95a51b03-fcc4-44bc-b7d6-780a76aefa54",
+      "name": "Vector Code"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        752,
+        128
+      ],
+      "id": "f4fe4290-498a-48de-86cc-19cb6dc1ecd7",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "PDFco Api",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PDFco Api": {
+      "main": [
+        [
+          {
+            "node": "Download Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Text": {
+      "main": [
+        [
+          {
+            "node": "Chunk Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chunk Text": {
+      "main": [
+        [
+          {
+            "node": "Chunk Embedding",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert to Pinecone": {
+      "main": [
+        [
+          {
+            "node": "Question Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Question Code": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecode Query": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Question Embedding",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chunk Embedding": {
+      "main": [
+        [
+          {
+            "node": "Vector Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Question Embedding": {
+      "main": [
+        [
+          {
+            "node": "Pinecode Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vector Code": {
+      "main": [
+        [
+          {
+            "node": "Upsert to Pinecone",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "c5588dbd-c8be-4ee3-a42a-64a3be1542a3",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a5e7c31c24b0bede7af087fdbd6065e8851b385a42f7ac2aa5b1f746507d39f6"
+  },
+  "id": "OUHUYzM11Vvb8BCJ",
+  "tags": []
+}
